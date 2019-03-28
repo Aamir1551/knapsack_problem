@@ -41,7 +41,7 @@ function initialise_population(size_of_population, size_of_chromosomes) {
            current_chromosome = current_chromosome.concat(Math.round(Math.random()));
         }
         chromosomes_data[i] = {};
-        chromosomes_data[i].chromosomes = current_chromosome;
+        chromosomes_data[i].chromosomes = [0,0,0,0,0,0,0]//current_chromosome;
         chromosomes_data[i].fitness_value = 0;
     }
     return chromosomes_data;
@@ -99,20 +99,27 @@ function cross_breed(parent1_chromosome, parent2_chromosome) {
     for(let i=point1; i< parent1_chromosome.length;i++) {
         child_chromosome.push(parent2_chromosome[i]);
     }
-    if(calculate_weight(knapsack_capacity, child_chromosome) > knapsack_capacity) {
-      return cross_breed(parent1_chromosome, parent2_chromosome);
-    }
     return child_chromosome;
 }
 
 //take in a chromosome whcih is an array
-function apply_mutation(chromosome, number_of_muations) {
+function apply_mutation(chromosome, number_of_muations, recurseive_count) {
+    recurseive_count = recurseive_count || 0;
     mutated_chromosome = chromosome.slice(0);
     for(let i = 0; i<number_of_muations; i++) {
         gene1_index = Math.round(Math.random() * (chromosome.length -1));
         gene2_index = Math.round(Math.random() * (chromosome.length -1));
-        mutated_chromosome[gene1_index] = mutated_chromosome[gene2_index];
+        mutated_chromosome[gene1_index] = Number(!mutated_chromosome[gene1_index]);
+        mutated_chromosome[gene2_index] = Number(!mutated_chromosome[gene2_index]);
+        //mutated_chromosome[gene1_index] = mutated_chromosome[gene2_index];
     }
+    
+    if(calculate_weight(items, mutated_chromosome) > knapsack_capacity) {
+      if(recurseive_count === 100) {
+        return [0,0,0,0,0,0,0];
+      }
+      return apply_mutation(chromosome, number_of_muations, recurseive_count +1) 
+    }    
     return mutated_chromosome;
 }
 
@@ -139,12 +146,14 @@ function create_next_population(chromosomes_data, number_of_children) {
 var population;
 function start() {
     population = initialise_population(6, 7);
+    population = create_next_population(population, 6);
+    calculate_fitness_for_chromosomes(items, population);
     console.log(population)
 
-    for(let i = 0; i< 20; i++) {
+    for(let i = 1; i< 1000; i++) {
         console.log("Generation: " + i);
-        calculate_fitness_for_chromosomes(items, population);
         population = create_next_population(population, 6);
+        calculate_fitness_for_chromosomes(items, population);
     }
     console.log(population)
 
