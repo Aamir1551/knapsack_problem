@@ -52,7 +52,7 @@ function initialise_population(size_of_population, size_of_chromosomes) {
 //In this case we are simply calculating the total value of items selected
 function calculate_fitness_value(environment, chromosomes) {
     let fitness_value = 0;
-    for(i = 0; i< chromosomes.length; i++) {
+    for(let i = 0; i< chromosomes.length; i++) {
         fitness_value += chromosomes[i] * environment[i].value;
     } 
     return fitness_value;
@@ -60,25 +60,32 @@ function calculate_fitness_value(environment, chromosomes) {
 
 function calculate_fitness_for_chromosomes(environment, chromosomes_data) {
     for(let chromosomes in chromosomes_data) {
-        chromosomes_data[chromosomes].fitness_value = calculate_fitness_value(environment, chromosomes_data[chromosomes]);
+        chromosomes_data[chromosomes].fitness_value = calculate_fitness_value(environment, chromosomes_data[chromosomes].chromosomes);
     }
 }
 
 //need to remove all the chromoses that select all the items
 function calculate_fitness_sum(chromosomes_data) {
     let fitness_sum = 0;
-    for(chromosome in chromosomes_data) {
-        fitness_sum += chromosome.value;
+    for(let chromosome in chromosomes_data) {
+        fitness_sum += chromosomes_data[chromosome].fitness_value;
     }
     return fitness_sum;
 }
 
 function get_parent_chromosome(random_choice, chromosome_data) {
     for(let chromosome in chromosome_data) {
-        random_choice -= chromosome.fitness_value;
-        if(random_choice <= 0) {} 
-        return chromosome;
+        random_choice -= chromosome_data[chromosome].fitness_value;
+        if(random_choice <= 0) {return chromosome_data[chromosome].chromosomes}
     }
+}
+
+function calculate_weight(environment, chromosome) {
+  let total_weight = 0;
+  for(let i = 0; i< Object.keys(environment).length; i++) {
+    total_weight += environment[i].weight * chromosome[i];
+  }
+  return total_weight;
 }
 
 //the crossbreed algorithm that will be selected is onepoint crossover
@@ -87,64 +94,60 @@ function cross_breed(parent1_chromosome, parent2_chromosome) {
     point1 = 3;
     child_chromosome = [];
     for(let i = 0; i< point1;i++) {
-        child_chromosome += parent1_chromosome[i];
+        child_chromosome.push(parent1_chromosome[i]);
     }
-    for(let i=point1 - 1; i< parent1_chromosome.length;i++) {
-        child_chromosome += parent2_chromosome[i];
+    for(let i=point1; i< parent1_chromosome.length;i++) {
+        child_chromosome.push(parent2_chromosome[i]);
     }
-    console.log("jj");
-    console.log(child_chromosome.length);
+    if(calculate_weight(knapsack_capacity, child_chromosome) > knapsack_capacity) {
+      return cross_breed(parent1_chromosome, parent2_chromosome);
+    }
     return child_chromosome;
 }
 
+//take in a chromosome whcih is an array
 function apply_mutation(chromosome, number_of_muations) {
     mutated_chromosome = chromosome.slice(0);
     for(let i = 0; i<number_of_muations; i++) {
-        gene1_index = Math.round(Math.random() * chromosome.length);
-        gene2_index = Math.round(Math.random() * chromosome.length);
+        gene1_index = Math.round(Math.random() * (chromosome.length -1));
+        gene2_index = Math.round(Math.random() * (chromosome.length -1));
         mutated_chromosome[gene1_index] = mutated_chromosome[gene2_index];
     }
     return mutated_chromosome;
 }
 
 function create_next_population(chromosomes_data, number_of_children) {
-    console.log("hh");
     generated_chromosomes = {};
 
     for(let i = 0; i< number_of_children; i+=2) {
-        console.log(number_of_children);
-        console.log(i);
-        console.log("ii");
         let fitness_sum = calculate_fitness_sum(chromosomes_data);
         let parent1_chromosome = get_parent_chromosome(Math.round(Math.random() * fitness_sum), chromosomes_data);
         let parent2_chromosome = get_parent_chromosome(Math.round(Math.random() * fitness_sum), chromosomes_data);
         let child1_chromosome = cross_breed(parent1_chromosome, parent2_chromosome);
         let child2_chromosome = cross_breed(parent2_chromosome, parent1_chromosome);
         generated_chromosomes[i] = {};
-        generated_chromosomes[i] = apply_mutation(child1_chromosome, 1);
+        generated_chromosomes[i].chromosomes = apply_mutation(child1_chromosome, 1);
         generated_chromosomes[i].fitness_value = 0;
-        generated_chromosomes[i] = {};
-        generated_chromosomes[i+1] = apply_mutation(child2_chromosome, 1);
+        generated_chromosomes[i+1] = {};
+        generated_chromosomes[i+1].chromosomes = apply_mutation(child2_chromosome, 1);
         generated_chromosomes[i+1].fitness_value = 0;
     }
-    console.log("exited");
     return generated_chromosomes; 
 }
 
 
-
-
+var population;
 function start() {
-    population = initialise_population(5, 7);
+    population = initialise_population(6, 7);
+    console.log(population)
 
-    for(i = 0; i< 10; i++) {
+    for(let i = 0; i< 20; i++) {
         console.log("Generation: " + i);
         calculate_fitness_for_chromosomes(items, population);
-        population = create_next_population(population, 5);
+        population = create_next_population(population, 6);
     }
+    console.log(population)
 
 };
 
-module.exports = {knapsack_capacity, items, initialise_population, calculate_fitness_for_chromosomes, calculate_fitness_for_chromosomes, calculate_fitness_sum, 
-get_parent_chromosome, cross_breed, apply_mutation, create_next_population, start};
-
+start();
